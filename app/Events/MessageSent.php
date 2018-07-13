@@ -33,6 +33,13 @@ class MessageSent implements ShouldBroadcast
     public $message;
 
     /**
+     * URL of chat
+     *
+     * @var \Illuminate\Contracts\Routing\UrlGenerator|string
+     */
+    public $url;
+
+    /**
      * Create a new event instance.
      *
      * @param User $user
@@ -42,6 +49,7 @@ class MessageSent implements ShouldBroadcast
     {
         $this->user = $user;
         $this->message = $message;
+        $this->url = url('/');
     }
 
     /**

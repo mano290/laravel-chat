@@ -9,13 +9,179 @@ require('./bootstrap');
 // init angular module
 let app = angular.module("laravel_chat", []);
 
+// Notification factory
+app.factory("$notification", ["$q", "$timeout", ($q, $timeout) => {
+
+    // API browser notification
+    let Notification = window.Notification || window.mozNotification || window.webkitNotification;
+
+    // List permission
+    const PERMISSIONS = { DEFAULT: 'default', GRANTED: 'granted', DENIED: 'denied' };
+
+    // Settings notification
+    const SETTINGS = { autoClose: true, duration: 15 };
+
+    /**
+     * Returns if notification is supported
+     * @returns {boolean}
+     */
+    function isSupported() {
+        if(typeof Notification === "undefined") {
+            console.error("Notification API not supported");
+            return false
+        }
+        return true;
+    }
+
+    /**
+     * Returns if authorized
+     * @returns {*}
+     */
+    function currentPermission() {
+        if (! isSupported()) return PERMISSIONS.DENIED;
+        return Notification.permission;
+    }
+
+    /**
+     * Request permission to user
+     * @returns {jQuery.promise|promise|*|Promise|PromiseLike<any>}
+     */
+    function requestPermission() {
+
+        // If not support
+        if (! isSupported()) $q.reject('Notification API not supported');
+
+        // Promisse
+        let deferred = $q.defer();
+
+        // Request notification permission
+        Notification.requestPermission().then((permission) => {
+            if (permission === PERMISSIONS.GRANTED) {
+                deferred.resolve(permission);
+            } else {
+                deferred.reject(permission);
+            }
+        });
+
+        return deferred.promise;
+    }
+
+    /**
+     * Show notification
+     * @param title
+     * @param options
+     * @returns {*}
+     */
+    function show(title, options) {
+
+        // Ensures that options is always an object
+        options = options || {};
+
+        // Check first if supported, validate arguments, then check if
+        // notification is disabled by the client
+        if (! _isArgsValid(title, options) || _isPageVisible() || currentPermission() !== PERMISSIONS.GRANTED) return;
+
+        let notification = new Notification(title, options);
+        let autoClose = (options.autoClose === undefined) ? SETTINGS.autoClose : options.autoClose;
+        let duration = options.duration || SETTINGS.duration;
+
+        // Event click on notification
+        notification.onclick = options.onClick;
+
+        // If autoClose is set to true, close the notification using the duration
+        if (autoClose) _autoCloseAfter(notification, duration);
+
+        return notification;
+    }
+
+    /**
+     * Valid function show arguments
+     * @param title
+     * @param options
+     * @returns {boolean}
+     * @private
+     */
+    function _isArgsValid(title, options) {
+
+        // title notification
+        if(! angular.isString(title)) {
+            console.log("notification title is required");
+            return false;
+        }
+
+        // function onclick notification
+        if(typeof options.onClick === "undefined") {
+            console.error("option.onClick is required");
+            return false;
+        }
+
+        // valid function onclick
+        if(! angular.isFunction(options.onClick)) {
+            console.error("option.onClick is not a function");
+            return false;
+        }
+
+        // body notification
+        if(typeof options.body === "undefined") {
+            console.error("option.body is required");
+            return false;
+        }
+
+        // icon notification
+        if(typeof options.icon === "undefined") {
+            console.error("option.icon is required");
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if page is visible
+     * @returns {boolean}
+     * @private
+     */
+    function _isPageVisible() {
+        return ! (window.document.hidden || window.document.mozHidden || window.document.webkitHidden);
+    }
+
+    /**
+     * Auto close notification
+     * @param notification
+     * @param duration
+     * @private
+     */
+    function _autoCloseAfter(notification, duration) {
+        let durationInMs = duration * 1000;
+        $timeout(notification.close.bind(notification), durationInMs, false);
+    }
+
+    // Public Methods
+    return {
+        isSupported: isSupported,
+        currentPermission: currentPermission,
+        requestPermission: requestPermission,
+        show: show
+    };
+}]);
+
 // Set Socket ID in request
-app.run(($http) => {
+app.run(($http, $notification) => {
+
+    // Set header Socket ID
     $http.defaults.headers.common["X-Socket-ID"] = Echo.socketId();
+
+    // Request notification permission
+    setTimeout(() => {
+        $notification.requestPermission().then(
+            () => console.log("Notification accepts"),
+            () => console.log("Notification reject ")
+        );
+    })
 });
 
 // Controller chat
-app.controller("chatCtrl", ["$scope", "$http", ($scope, $http) => {
+app.controller("chatCtrl", ["$scope", "$http", "$notification", "$window", ($scope, $http, $notification, $window) => {
 
     $scope.messages = [];
     $scope.model_message = "";
@@ -28,6 +194,15 @@ app.controller("chatCtrl", ["$scope", "$http", ($scope, $http) => {
 
         //  Events Chat
         window.Echo.private('chat').listen('MessageSent', (e) => {
+
+            $notification.show(`New message from ${e.user.name}`, {
+                body: e.message.message,
+                icon: "https://i.imgur.com/2PKFLc5.png",
+                onClick: () => {
+                    $window.open(e.url, '_blank');
+                }
+            });
+
             $scope.messages.push({
                 message: e.message.message,
                 user: e.user
