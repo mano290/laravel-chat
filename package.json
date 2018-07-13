@@ -19,6 +19,7 @@
         "cross-env": "^5.1",
         "jquery": "^3.3.1",
         "laravel-echo": "^1.4.0",
-        "pusher-js": "^4.2.2"
+        "pusher-js": "^4.2.2",
+        "socket.io-client": "^2.1.1"
     }
 }

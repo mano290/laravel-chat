@@ -1,4 +1,3 @@
-
 /**
  * First we will load all of this project's JavaScript dependencies which
  * includes Vue and other libraries. It is a great starting point when
@@ -9,6 +8,11 @@ require('./bootstrap');
 
 // init angular module
 let app = angular.module("laravel_chat", []);
+
+// Set Socket ID in request
+app.run(($http) => {
+    $http.defaults.headers.common["X-Socket-ID"] = Echo.socketId();
+});
 
 // Controller chat
 app.controller("chatCtrl", ["$scope", "$http", ($scope, $http) => {
