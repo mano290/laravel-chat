@@ -1,5 +1,7 @@
 # Laravel Chat com Redis e Socket IO
 
+![Laravel Chat](https://i.imgur.com/EgH4yo0.jpg)
+
 ## Requesitos
 
  - PHP ^7.1.3
