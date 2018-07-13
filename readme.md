@@ -51,4 +51,4 @@
 2. Inicie o servidor usando
 `` php artisan serve ``
 
-3. Acesse <localhost:8000> e pronto! =D
+3. Acesse <http://localhost:8000> e pronto! =D
