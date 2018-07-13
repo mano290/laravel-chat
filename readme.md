@@ -1,6 +1,6 @@
-# Laravel Chat com Redis e Socket IO
-
 ![Laravel Chat](https://i.imgur.com/EgH4yo0.jpg)
+
+# Laravel Chat com Redis e Socket IO
 
 ## Requesitos
 
