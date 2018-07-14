@@ -27,6 +27,10 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
 
+    protected $appends = [
+        "uid"
+    ];
+
     /**
      * A user can have many messages
      *
@@ -35,5 +39,14 @@ class User extends Authenticatable
     public function messages()
     {
         return $this->hasMany(Message::class);
+    }
+
+    /**
+     * Uid user
+     * @return string
+     */
+    public function getUidAttribute()
+    {
+        return base64_encode($this->attributes["id"]);
     }
 }

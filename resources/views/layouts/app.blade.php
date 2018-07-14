@@ -78,6 +78,9 @@
 @section("scripts")
     <!-- Scripts -->
     <script src="{{ asset('js/app.js') }}" defer></script>
+    <script>
+        window.user = { name: "{{ auth()->user()->name }}", uid: "{{ auth()->user()->uid }}"}
+    </script>
 @show
 </body>
 </html>

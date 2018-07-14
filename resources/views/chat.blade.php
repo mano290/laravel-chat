@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container" ng-controller="chatCtrl">
+    <div class="container" ng-controller="chatCtrl" data-page="chat">
         <div class="row">
             <div class="col-md-8 col-md-offset-2">
                 <div class="panel panel-default">
@@ -37,9 +37,6 @@
 @section("scripts")
     @parent
     <script>
-        window.params = {
-            fetch_messages: "{{ route("chat.get.fetch-messages") }}",
-            user: {name: "{{ auth()->user()->name }}"}
-        }
+        window.params = { fetch_messages: "{{ route("chat.get.fetch-messages") }}" }
     </script>
 @endsection

@@ -9,6 +9,22 @@ require('./bootstrap');
 // init angular module
 let app = angular.module("laravel_chat", []);
 
+/**
+ * Local Storage
+ * @type {{db: Storage, select: Function, insert: Function}}
+ */
+let Storage = {
+    db: window.localStorage,
+    select: function (chave) {
+        let valor = Storage.db.getItem(chave);
+        return JSON.parse(valor);
+    },
+    insert: function (chave, valor) {
+        let jsonString = JSON.stringify(valor);
+        Storage.db.setItem(chave, jsonString);
+    }
+};
+
 // Notification factory
 app.factory("$notification", ["$q", "$timeout", ($q, $timeout) => {
 
@@ -19,7 +35,7 @@ app.factory("$notification", ["$q", "$timeout", ($q, $timeout) => {
     const PERMISSIONS = { DEFAULT: 'default', GRANTED: 'granted', DENIED: 'denied' };
 
     // Settings notification
-    const SETTINGS = { autoClose: true, duration: 15 };
+    const SETTINGS = { autoClose: true, duration: 15, force: false };
 
     /**
      * Returns if notification is supported
@@ -77,9 +93,12 @@ app.factory("$notification", ["$q", "$timeout", ($q, $timeout) => {
         // Ensures that options is always an object
         options = options || {};
 
+        // Merge options
+        angular.extend(SETTINGS, options);
+
         // Check first if supported, validate arguments, then check if
         // notification is disabled by the client
-        if (! _isArgsValid(title, options) || _isPageVisible() || currentPermission() !== PERMISSIONS.GRANTED) return;
+        if (! _isArgsValid(title, options) || _isPageVisible(options.force) || currentPermission() !== PERMISSIONS.GRANTED) return;
 
         let notification = new Notification(title, options);
         let autoClose = (options.autoClose === undefined) ? SETTINGS.autoClose : options.autoClose;
@@ -105,7 +124,7 @@ app.factory("$notification", ["$q", "$timeout", ($q, $timeout) => {
 
         // title notification
         if(! angular.isString(title)) {
-            console.log("notification title is required");
+            console.error("notification title is required");
             return false;
         }
 
@@ -138,11 +157,17 @@ app.factory("$notification", ["$q", "$timeout", ($q, $timeout) => {
 
     /**
      * Check if page is visible
+     * @param force
      * @returns {boolean}
      * @private
      */
-    function _isPageVisible() {
-        return ! (window.document.hidden || window.document.mozHidden || window.document.webkitHidden);
+    function _isPageVisible(force) {
+        return ! (
+            window.document.hidden ||
+            window.document.mozHidden ||
+            window.document.webkitHidden ||
+            force
+        );
     }
 
     /**
@@ -165,23 +190,74 @@ app.factory("$notification", ["$q", "$timeout", ($q, $timeout) => {
     };
 }]);
 
-// Set Socket ID in request
-app.run(($http, $notification) => {
+// Events chat
+app.factory("$chat", ["$notification", ($notification) => {
 
-    // Set header Socket ID
-    $http.defaults.headers.common["X-Socket-ID"] = Echo.socketId();
+    // Current page when chat page
+    let $chat_page = document.querySelector("[data-page='chat']");
 
-    // Request notification permission
-    setTimeout(() => {
-        $notification.requestPermission().then(
-            () => console.log("Notification accepts"),
-            () => console.log("Notification reject ")
-        );
-    })
+    /**
+     * Listen events chat
+     * @param callback
+     */
+    function listenChatEvents(callback) {
+
+        // Request notification permission
+        if(isPageChat()) $notification.requestPermission();
+
+        //  Events Chat
+        window.Echo.private('chat').listen('MessageSent', (e) => {
+
+            // For multiple tabs open
+            if(window.user.uid !== e.user.uid) {
+
+                // Browser notification
+                $notification.show(`New message from ${e.user.name}`, {
+                    body: e.message.message,
+                    icon: "https://i.imgur.com/2PKFLc5.png",
+                    force: (! isPageChat()),
+                    tag: e.message.id,
+                    onClick: () => {
+                        window.open(e.url, '_blank');
+                    }
+                });
+            }
+
+            // Callback when receive event
+            if(angular.isFunction(callback)) callback(e);
+        });
+    }
+
+    /**
+     * Returns if is page char
+     * @returns {boolean}
+     */
+    function isPageChat() {
+        return ($chat_page != null);
+    }
+
+    return {
+        listenChatEvents: listenChatEvents,
+        isPageChat: isPageChat
+    }
+}]);
+
+// Set Socket ID in request and chat events
+app.run(($http, $chat, $timeout) => {
+
+    // Document ready
+    angular.element(document).ready(() => {
+
+        // Set header Socket ID
+        $timeout(() => $http.defaults.headers.common["X-Socket-ID"] = Echo.socketId(), 500);
+
+        // Notifications chat when not page chat
+        if(! $chat.isPageChat()) $chat.listenChatEvents();
+    });
 });
 
 // Controller chat
-app.controller("chatCtrl", ["$scope", "$http", "$notification", "$window", ($scope, $http, $notification, $window) => {
+app.controller("chatCtrl", ["$scope", "$http", "$chat", ($scope, $http, $chat) => {
 
     $scope.messages = [];
     $scope.model_message = "";
@@ -192,17 +268,10 @@ app.controller("chatCtrl", ["$scope", "$http", "$notification", "$window", ($sco
         // fetch messages user
         $scope.fetchMessages();
 
-        //  Events Chat
-        window.Echo.private('chat').listen('MessageSent', (e) => {
+        // Listen events chat
+        $chat.listenChatEvents((e) => {
 
-            $notification.show(`New message from ${e.user.name}`, {
-                body: e.message.message,
-                icon: "https://i.imgur.com/2PKFLc5.png",
-                onClick: () => {
-                    $window.open(e.url, '_blank');
-                }
-            });
-
+            // Push message
             $scope.messages.push({
                 message: e.message.message,
                 user: e.user
@@ -234,7 +303,7 @@ app.controller("chatCtrl", ["$scope", "$http", "$notification", "$window", ($sco
             // Push message
             $scope.messages.push({
                 message: message,
-                user: window.params.user
+                user: window.user
             });
             // Sends user message
             $http.post($this.attr("action"), {

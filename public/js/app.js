@@ -1043,7 +1043,7 @@ function load() {
 
   // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
   if (!r && typeof process !== 'undefined' && 'env' in process) {
-    r = Object({"MIX_PUSHER_APP_CLUSTER":"mt1","MIX_PUSHER_APP_KEY":"","NODE_ENV":"development"}).DEBUG;
+    r = Object({"MIX_PUSHER_APP_CLUSTER":"","MIX_PUSHER_APP_KEY":"","NODE_ENV":"development"}).DEBUG;
   }
 
   return r;
@@ -1300,7 +1300,7 @@ function load() {
 
   // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
   if (!r && typeof process !== 'undefined' && 'env' in process) {
-    r = Object({"MIX_PUSHER_APP_CLUSTER":"mt1","MIX_PUSHER_APP_KEY":"","NODE_ENV":"development"}).DEBUG;
+    r = Object({"MIX_PUSHER_APP_CLUSTER":"","MIX_PUSHER_APP_KEY":"","NODE_ENV":"development"}).DEBUG;
   }
 
   return r;
@@ -14344,6 +14344,22 @@ __webpack_require__(27);
 // init angular module
 var app = angular.module("laravel_chat", []);
 
+/**
+ * Local Storage
+ * @type {{db: Storage, select: Function, insert: Function}}
+ */
+var Storage = {
+    db: window.localStorage,
+    select: function select(chave) {
+        var valor = Storage.db.getItem(chave);
+        return JSON.parse(valor);
+    },
+    insert: function insert(chave, valor) {
+        var jsonString = JSON.stringify(valor);
+        Storage.db.setItem(chave, jsonString);
+    }
+};
+
 // Notification factory
 app.factory("$notification", ["$q", "$timeout", function ($q, $timeout) {
 
@@ -14354,7 +14370,7 @@ app.factory("$notification", ["$q", "$timeout", function ($q, $timeout) {
     var PERMISSIONS = { DEFAULT: 'default', GRANTED: 'granted', DENIED: 'denied' };
 
     // Settings notification
-    var SETTINGS = { autoClose: true, duration: 15 };
+    var SETTINGS = { autoClose: true, duration: 15, force: false };
 
     /**
      * Returns if notification is supported
@@ -14412,9 +14428,12 @@ app.factory("$notification", ["$q", "$timeout", function ($q, $timeout) {
         // Ensures that options is always an object
         options = options || {};
 
+        // Merge options
+        angular.extend(SETTINGS, options);
+
         // Check first if supported, validate arguments, then check if
         // notification is disabled by the client
-        if (!_isArgsValid(title, options) || _isPageVisible() || currentPermission() !== PERMISSIONS.GRANTED) return;
+        if (!_isArgsValid(title, options) || _isPageVisible(options.force) || currentPermission() !== PERMISSIONS.GRANTED) return;
 
         var notification = new Notification(title, options);
         var autoClose = options.autoClose === undefined ? SETTINGS.autoClose : options.autoClose;
@@ -14440,7 +14459,7 @@ app.factory("$notification", ["$q", "$timeout", function ($q, $timeout) {
 
         // title notification
         if (!angular.isString(title)) {
-            console.log("notification title is required");
+            console.error("notification title is required");
             return false;
         }
 
@@ -14473,11 +14492,12 @@ app.factory("$notification", ["$q", "$timeout", function ($q, $timeout) {
 
     /**
      * Check if page is visible
+     * @param force
      * @returns {boolean}
      * @private
      */
-    function _isPageVisible() {
-        return !(window.document.hidden || window.document.mozHidden || window.document.webkitHidden);
+    function _isPageVisible(force) {
+        return !(window.document.hidden || window.document.mozHidden || window.document.webkitHidden || force);
     }
 
     /**
@@ -14500,24 +14520,76 @@ app.factory("$notification", ["$q", "$timeout", function ($q, $timeout) {
     };
 }]);
 
-// Set Socket ID in request
-app.run(function ($http, $notification) {
+// Events chat
+app.factory("$chat", ["$notification", function ($notification) {
 
-    // Set header Socket ID
-    $http.defaults.headers.common["X-Socket-ID"] = Echo.socketId();
+    // Current page when chat page
+    var $chat_page = document.querySelector("[data-page='chat']");
 
-    // Request notification permission
-    setTimeout(function () {
-        $notification.requestPermission().then(function () {
-            return console.log("Notification accepts");
-        }, function () {
-            return console.log("Notification reject ");
+    /**
+     * Listen events chat
+     * @param callback
+     */
+    function listenChatEvents(callback) {
+
+        // Request notification permission
+        if (isPageChat()) $notification.requestPermission();
+
+        //  Events Chat
+        window.Echo.private('chat').listen('MessageSent', function (e) {
+
+            // For multiple tabs open
+            if (window.user.uid !== e.user.uid) {
+
+                // Browser notification
+                $notification.show("New message from " + e.user.name, {
+                    body: e.message.message,
+                    icon: "https://i.imgur.com/2PKFLc5.png",
+                    force: !isPageChat(),
+                    tag: e.message.id,
+                    onClick: function onClick() {
+                        window.open(e.url, '_blank');
+                    }
+                });
+            }
+
+            // Callback when receive event
+            if (angular.isFunction(callback)) callback(e);
         });
+    }
+
+    /**
+     * Returns if is page char
+     * @returns {boolean}
+     */
+    function isPageChat() {
+        return $chat_page != null;
+    }
+
+    return {
+        listenChatEvents: listenChatEvents,
+        isPageChat: isPageChat
+    };
+}]);
+
+// Set Socket ID in request and chat events
+app.run(function ($http, $chat, $timeout) {
+
+    // Document ready
+    angular.element(document).ready(function () {
+
+        // Set header Socket ID
+        $timeout(function () {
+            return $http.defaults.headers.common["X-Socket-ID"] = Echo.socketId();
+        }, 500);
+
+        // Notifications chat when not page chat
+        if (!$chat.isPageChat()) $chat.listenChatEvents();
     });
 });
 
 // Controller chat
-app.controller("chatCtrl", ["$scope", "$http", "$notification", "$window", function ($scope, $http, $notification, $window) {
+app.controller("chatCtrl", ["$scope", "$http", "$chat", function ($scope, $http, $chat) {
 
     $scope.messages = [];
     $scope.model_message = "";
@@ -14528,17 +14600,10 @@ app.controller("chatCtrl", ["$scope", "$http", "$notification", "$window", funct
         // fetch messages user
         $scope.fetchMessages();
 
-        //  Events Chat
-        window.Echo.private('chat').listen('MessageSent', function (e) {
+        // Listen events chat
+        $chat.listenChatEvents(function (e) {
 
-            $notification.show("New message from " + e.user.name, {
-                body: e.message.message,
-                icon: "https://i.imgur.com/2PKFLc5.png",
-                onClick: function onClick() {
-                    $window.open(e.url, '_blank');
-                }
-            });
-
+            // Push message
             $scope.messages.push({
                 message: e.message.message,
                 user: e.user
@@ -14570,7 +14635,7 @@ app.controller("chatCtrl", ["$scope", "$http", "$notification", "$window", funct
             // Push message
             $scope.messages.push({
                 message: message,
-                user: window.params.user
+                user: window.user
             });
             // Sends user message
             $http.post($this.attr("action"), {
@@ -58063,7 +58128,7 @@ function load() {
 
   // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
   if (!r && typeof process !== 'undefined' && 'env' in process) {
-    r = Object({"MIX_PUSHER_APP_CLUSTER":"mt1","MIX_PUSHER_APP_KEY":"","NODE_ENV":"development"}).DEBUG;
+    r = Object({"MIX_PUSHER_APP_CLUSTER":"","MIX_PUSHER_APP_KEY":"","NODE_ENV":"development"}).DEBUG;
   }
 
   return r;
