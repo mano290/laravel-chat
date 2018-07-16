@@ -1,7 +1,6 @@
-<?php
+<?php namespace App\Http\Controllers;
 
-namespace App\Http\Controllers;
-
+use App\Services\UserService;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -19,10 +18,15 @@ class HomeController extends Controller
     /**
      * Show the application dashboard.
      *
+     * @param UserService $userService
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(UserService $userService)
     {
-        return view('home');
+        $chats = $userService->getChatsUser();
+
+        return view('home', compact(
+            'chats'
+        ));
     }
 }

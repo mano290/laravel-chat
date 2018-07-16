@@ -1,6 +1,4 @@
-<?php
-
-namespace App;
+<?php namespace App;
 
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -27,6 +25,9 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
 
+    /**
+     * @var array
+     */
     protected $appends = [
         "uid"
     ];
@@ -38,7 +39,18 @@ class User extends Authenticatable
      */
     public function messages()
     {
-        return $this->hasMany(Message::class);
+        return $this->hasMany(RoomMessages::class);
+    }
+
+    /**
+     * Chat rooms user
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function rooms()
+    {
+        return $this->belongsToMany(Rooms::class, "room_users", "user_id", "room_id")
+            ->orderBy("created_at", "desc");
     }
 
     /**
