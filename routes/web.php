@@ -26,4 +26,6 @@ Route::group(["prefix" => "app/user", "namespace" => "Api"], function () {
 
     Route::get("/messages-chat/{uid}", "ChatController@messagesChat")->name("app.user.messages-chat");
 
+    Route::post("/new-message", "ChatController@newMessageUser")->name("app.user.new-message");
+
 });

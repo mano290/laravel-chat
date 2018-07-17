@@ -40,7 +40,7 @@ class User extends Authenticatable
      */
     public function messages()
     {
-        return $this->hasMany(RoomMessages::class);
+        return $this->hasMany(RoomMessage::class);
     }
 
     /**
@@ -50,7 +50,7 @@ class User extends Authenticatable
      */
     public function rooms()
     {
-        return $this->belongsToMany(Rooms::class, "room_users", "user_id", "room_id")
+        return $this->belongsToMany(Room::class, "room_users", "user_id", "room_id")
             ->orderBy("created_at", "desc");
     }
 

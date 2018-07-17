@@ -10,6 +10,17 @@ require('./bootstrap');
 let app = angular.module("laravel_chat", []);
 
 /**
+ * Functions Helpers
+ * @type {{dateNow: function()}}
+ */
+let Helpers = {
+    dateNow: () => {
+        let date = new Date();
+        return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+    }
+};
+
+/**
  * Local Storage
  * @type {{db: Storage, select: Function, insert: Function}}
  */
@@ -98,7 +109,7 @@ app.factory("$notification", ["$q", "$timeout", ($q, $timeout) => {
 
         // Check first if supported, validate arguments, then check if
         // notification is disabled by the client
-        if (! _isArgsValid(title, options) || _isPageVisible(options.force) || currentPermission() !== PERMISSIONS.GRANTED) return;
+        if (! _isArgsValid(title, options)|| _isPageVisible(options.force) || currentPermission() !== PERMISSIONS.GRANTED) return;
 
         let notification = new Notification(title, options);
         let autoClose = (options.autoClose === undefined) ? SETTINGS.autoClose : options.autoClose;
@@ -198,33 +209,35 @@ app.factory("$chat", ["$notification", ($notification) => {
 
     /**
      * Listen events chat
+     * @param eventName
      * @param callback
      */
-    function listenChatEvents(callback) {
+    function listenChatEvents(eventName, callback) {
 
         // Request notification permission
         if(isPageChat()) $notification.requestPermission();
 
         //  Events Chat
-        window.Echo.private('chat').listen('MessageSent', (e) => {
+        window.Echo.private(eventName).listen('NewMessageChat', (e) => {
 
             // For multiple tabs open
-            if(window.user.uid !== e.user.uid) {
+            if(window.user.uid !== e.data["user_uid"]) {
 
                 // Browser notification
-                $notification.show(`New message from ${e.user.name}`, {
-                    body: e.message.message,
-                    icon: "https://i.imgur.com/2PKFLc5.png",
+                $notification.show(`New message from ${e.data["message_user"]}`, {
+                    body: e.data["message_content"],
+                    icon: e.data["message_user_avatar"],
                     force: (! isPageChat()),
-                    tag: e.message.id,
-                    onClick: () => {
-                        window.open(e.url, '_blank');
+                    tag: e.data["message_uid"],
+                    onClick: (event) => {
+                        event.currentTarget.close();
+                        window.focus();
                     }
                 });
             }
 
             // Callback when receive event
-            if(angular.isFunction(callback)) callback(e);
+            if(angular.isFunction(callback)) callback(e.data);
         });
     }
 
@@ -263,24 +276,13 @@ app.controller("chatCtrl", ["$scope", "$http", "$chat", ($scope, $http, $chat) =
     $scope.current_chat = [];
     $scope.model_message = "";
     $scope.chats = [];
+    $scope.subscribe_events = false;
 
     // Init page
     angular.element(document).ready(() => {
 
         // fetch messages user
         $scope.fetchChats();
-
-        // Listen events chat
-        $chat.listenChatEvents((e) => {
-
-            // Push message
-            $scope.messages.push({
-                message: e.message.message,
-                user: e.user
-            });
-
-            $scope.$apply();
-        });
     });
 
     /**
@@ -289,6 +291,34 @@ app.controller("chatCtrl", ["$scope", "$http", "$chat", ($scope, $http, $chat) =
     $scope.fetchChats = () => {
         $http.get(window.params["fetch_chats"]).then((response) => {
             $scope.chats = response.data;
+
+            // event subscribe
+            if($scope.subscribe_events === false) {
+                let chats_count = $scope.chats.length;
+                for(let i = 0; i < chats_count; i++) {
+                    // Listen events chat
+                    $chat.listenChatEvents($scope.chats[i]["room_event"], (e) => {
+
+                        // If chat is open in event room
+                        if($scope.current_chat.room_uid === e["message_room_uid"]) {
+
+                            // push message
+                            $scope.messages.push({
+                                message_user_avatar: e.message_user_avatar,
+                                message_user: e.message_user,
+                                message_date: e.message_date,
+                                message_content: e.message_content,
+                            });
+
+                            $scope.scrollRoomChat(100);
+                        }
+
+                        $scope.fetchChats();
+                    });
+                }
+
+                $scope.subscribe_events = true;
+            }
         });
     };
 
@@ -301,6 +331,8 @@ app.controller("chatCtrl", ["$scope", "$http", "$chat", ($scope, $http, $chat) =
         event.preventDefault();
         $http.get(chat["room_messages"]).then((response) => {
             $scope.messages = response.data;
+            $scope.scrollRoomChat();
+            $scope.current_chat = chat;
         });
     };
 
@@ -316,14 +348,32 @@ app.controller("chatCtrl", ["$scope", "$http", "$chat", ($scope, $http, $chat) =
             $scope.model_message = "";
             // Push message
             $scope.messages.push({
-                message: message,
-                user: window.user
+                message_user_avatar: window.user.avatar,
+                message_user: window.user.name,
+                message_date: Helpers.dateNow(),
+                message_content: message,
             });
+            // Scroll chat
+            $scope.scrollRoomChat();
             // Sends user message
             $http.post($this.attr("action"), {
+                room_uid: $scope.current_chat.room_uid,
                 message: message
+            }).then(() => {
+                // fetch messages user
+                $scope.fetchChats();
             });
         }
     };
+
+    /**
+     * Scroll bottom chat box
+     */
+    $scope.scrollRoomChat = (time = 0) => {
+        setTimeout(() => {
+            let scroller = document.querySelector(".chat-discussion");
+            scroller.scrollTop = scroller.scrollHeight;
+        }, time, false);
+    }
 
 }]);

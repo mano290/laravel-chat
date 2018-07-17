@@ -26,7 +26,7 @@ class ChatsController extends Controller
      */
     public function index()
     {
-        return view('chat');
+        return redirect()->to("/home");
     }
 
     /**

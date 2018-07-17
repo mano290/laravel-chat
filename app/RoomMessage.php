@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Class RoomMessages
  * @package App
  */
-class RoomMessages extends Model
+class RoomMessage extends Model
 {
     use SoftDeletes;
 
@@ -46,7 +46,7 @@ class RoomMessages extends Model
      */
     public function room()
     {
-        return $this->belongsTo(Rooms::class);
+        return $this->belongsTo(Room::class);
     }
 
     /**
@@ -64,6 +64,6 @@ class RoomMessages extends Model
      */
     public function statusReadMessage()
     {
-        return $this->hasMany(RoomReadMessages::class, "room_message_id");
+        return $this->hasMany(RoomReadMessage::class, "room_message_id");
     }
 }

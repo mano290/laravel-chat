@@ -41,4 +41,9 @@ class ChatController extends Controller
     {
         return $this->userService->getMessagesFromChat($chat_uid);
     }
+
+    public function newMessageUser(Request $request)
+    {
+        return $this->userService->newMessageFromUser($request->all());
+    }
 }

@@ -1,20 +1,30 @@
 <?php namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * Class RoomReadMessages
+ * Class RoomUsers
  * @package App
  */
-class RoomReadMessages extends Model
+class RoomUser extends Model
 {
+    use SoftDeletes;
+
     /**
      * @var array
      */
     protected $fillable = [
-        "user_id",
-        "room_message_id"
+        "user_id", "room_id", "is_admin"
     ];
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
+    }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
@@ -22,13 +32,5 @@ class RoomReadMessages extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function message()
-    {
-        return $this->belongsTo(RoomMessages::class);
     }
 }

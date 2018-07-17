@@ -80,7 +80,11 @@
     <script src="{{ asset('js/app.js') }}" defer></script>
     @auth
         <script>
-            window.user = { name: "{{ auth()->user()->name }}", uid: "{{ auth()->user()->uid }}"}
+            window.user = {
+                name: "{{ auth()->user()->name }}",
+                uid: "{{ auth()->user()->uid }}",
+                avatar: "{{ auth()->user()->avatar }}"
+            }
         </script>
     @endauth
 @show

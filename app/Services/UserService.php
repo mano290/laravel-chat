@@ -2,8 +2,9 @@
 
 use App\Enum\MessagesType;
 use App\Enum\RoomType;
-use App\Rooms;
-use App\RoomUsers;
+use App\Events\NewMessageChat;
+use App\Room;
+use App\RoomUser;
 use App\User;
 use Carbon\Carbon;
 
@@ -26,7 +27,7 @@ class UserService
     {
         $user = auth()->user();
 
-        $chats = RoomUsers::with([
+        $chats = RoomUser::with([
             "room.participantChat.user",
             "room.lastMessage"
         ])->where("user_id", $user->id)->get();
@@ -45,7 +46,8 @@ class UserService
                     "room_last_message" => $last_message->data[$last_message->type],
                     "room_last_time" => $last_message->created_at->diffForHumans(),
                     "room_updated_at" => $last_message->created_at->timestamp,
-                    "room_messages" => route("app.user.messages-chat", $chat->uid)
+                    "room_messages" => route("app.user.messages-chat", $chat->uid),
+                    "room_event" => NewMessageChat::EVENT_CHAT . $chat->uid
                 ];
             }
         }
@@ -67,7 +69,7 @@ class UserService
     {
         $to_user = User::find($to_user);
 
-        $new_room = Rooms::create();
+        $new_room = Room::create();
 
         $new_room->participants()->save($to_user);
 
@@ -86,7 +88,7 @@ class UserService
      */
     public function getMessagesFromChat($chat_uid)
     {
-        $room = Rooms::with("messages.user")->where("uid", $chat_uid)->first();
+        $room = Room::with("messages.user")->where("uid", $chat_uid)->first();
 
         foreach ($room->messages as $message) {
             if($message->type == MessagesType::MESSAGE) {
@@ -102,5 +104,30 @@ class UserService
         }
 
         return $this->return;
+    }
+
+    /**
+     * New message from user
+     *
+     * @param $data
+     * @return array
+     */
+    public function newMessageFromUser($data)
+    {
+        $user = auth()->user();
+
+        $room = Room::where("uid", $data["room_uid"])->first();
+
+        $message = $room->messages()->create([
+            "user_id" => $user->id,
+            "data" => [MessagesType::MESSAGE => $data["message"]],
+            "type" => MessagesType::MESSAGE
+        ]);
+
+        broadcast(new NewMessageChat($user, $message, $room))->toOthers();
+
+        return [
+            "message" => true
+        ];
     }
 }

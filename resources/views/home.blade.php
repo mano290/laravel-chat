@@ -28,7 +28,7 @@
                                                 <img class="chat-avatar" ng-src="@{{ chat['room_image'] }}" alt="@{{ chat['room_title'] }}">
                                                 <div class="chat-user-name">
                                                     <a href="#" ng-click="joinRoom(chat, $event)">@{{ chat["room_title"] }}</a>
-                                                    <span>@{{ chat["room_last_message"] }}</span>
+                                                    <span class="d-block text-truncate">@{{ chat["room_last_message"] }}</span>
                                                 </div>
                                             </div>
 
@@ -46,10 +46,13 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="chat-message-form">
-                                        <div class="form-group">
-                                            <textarea class="form-control message-input" name="message" placeholder="Enter message text and press enter"></textarea>
-                                        </div>
+                                    <div class="chat-message-form" ng-show="messages.length > 0">
+                                        <form action="{{ route('app.user.new-message') }}" ng-submit="sendMessage($event)">
+                                            <div class="form-group">
+                                                <input class="form-control message-input" name="message" ng-model="model_message"
+                                                          placeholder="Enter message text and press enter">
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>

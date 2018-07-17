@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * Class Rooms
  * @package App
  */
-class Rooms extends Model
+class Room extends Model
 {
     use SoftDeletes;
 
@@ -67,7 +67,7 @@ class Rooms extends Model
      */
     public function participantChat()
     {
-        return $this->belongsTo(RoomUsers::class, "id", "room_id")
+        return $this->belongsTo(RoomUser::class, "id", "room_id")
             ->where("user_id", "!=", auth()->user()->id);
     }
 
@@ -78,7 +78,7 @@ class Rooms extends Model
      */
     public function messages()
     {
-        return $this->hasMany(RoomMessages::class, "room_id")
+        return $this->hasMany(RoomMessage::class, "room_id")
             ->orderBy("created_at", "asc");
     }
 
@@ -89,7 +89,7 @@ class Rooms extends Model
      */
     public function lastMessage()
     {
-        return $this->hasOne(RoomMessages::class, "id", "last_message_id")
+        return $this->hasOne(RoomMessage::class, "id", "last_message_id")
             ->orderBy("created_at", "desc");
     }
 }
