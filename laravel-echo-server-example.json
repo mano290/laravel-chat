@@ -19,7 +19,7 @@
 		}
 	},
 	"devMode": true,
-	"host": null,
+	"host": "http://chat-laravel.herokuapp.com/",
 	"port": "6001",
 	"protocol": "http",
 	"socketio": {},
