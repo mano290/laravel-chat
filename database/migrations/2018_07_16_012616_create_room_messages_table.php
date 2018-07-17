@@ -1,11 +1,13 @@
 <?php
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
 class CreateRoomMessagesTable extends Migration
 {
+    use SoftDeletes;
     /**
      * Run the migrations.
      *
@@ -30,6 +32,7 @@ class CreateRoomMessagesTable extends Migration
                 \App\Enum\MessagesType::MESSAGE,
             ]);
 
+            $table->softDeletes();
             $table->timestamps();
         });
     }

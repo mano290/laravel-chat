@@ -1,5 +1,6 @@
 <?php namespace App;
 
+use App\Enum\UserAvatar;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 
@@ -60,5 +61,15 @@ class User extends Authenticatable
     public function getUidAttribute()
     {
         return base64_encode($this->attributes["id"]);
+    }
+
+    /**
+     * User avatar
+     *
+     * @return mixed
+     */
+    public function getAvatarAttribute()
+    {
+        return UserAvatar::USER_AVATAR[$this->attributes['id']];
     }
 }

@@ -18,15 +18,10 @@ class HomeController extends Controller
     /**
      * Show the application dashboard.
      *
-     * @param UserService $userService
      * @return \Illuminate\Http\Response
      */
-    public function index(UserService $userService)
+    public function index()
     {
-        $chats = $userService->getChatsUser();
-
-        return view('home', compact(
-            'chats'
-        ));
+        return view('home');
     }
 }

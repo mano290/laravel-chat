@@ -19,3 +19,11 @@ Route::get("/home", "HomeController@index");
 Route::get('/messages', 'ChatsController@fetchMessages')->name("chat.get.fetch-messages");
 
 Route::post('/messages', 'ChatsController@sendMessage')->name("chat.post.new-message");
+
+Route::group(["prefix" => "app/user", "namespace" => "Api"], function () {
+
+    Route::get("/list-chats", "ChatController@listChats")->name("app.user.list-chat");
+
+    Route::get("/messages-chat/{uid}", "ChatController@messagesChat")->name("app.user.messages-chat");
+
+});

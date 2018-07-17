@@ -260,13 +260,15 @@ app.run(($http, $chat, $timeout) => {
 app.controller("chatCtrl", ["$scope", "$http", "$chat", ($scope, $http, $chat) => {
 
     $scope.messages = [];
+    $scope.current_chat = [];
     $scope.model_message = "";
+    $scope.chats = [];
 
     // Init page
     angular.element(document).ready(() => {
 
         // fetch messages user
-        $scope.fetchMessages();
+        $scope.fetchChats();
 
         // Listen events chat
         $chat.listenChatEvents((e) => {
@@ -284,8 +286,20 @@ app.controller("chatCtrl", ["$scope", "$http", "$chat", ($scope, $http, $chat) =
     /**
      * Fetch user messages
      */
-    $scope.fetchMessages = () => {
-        $http.get(window.params["fetch_messages"]).then((response) => {
+    $scope.fetchChats = () => {
+        $http.get(window.params["fetch_chats"]).then((response) => {
+            $scope.chats = response.data;
+        });
+    };
+
+    /**
+     *
+     * @param chat
+     * @param event
+     */
+    $scope.joinRoom = (chat, event) => {
+        event.preventDefault();
+        $http.get(chat["room_messages"]).then((response) => {
             $scope.messages = response.data;
         });
     };

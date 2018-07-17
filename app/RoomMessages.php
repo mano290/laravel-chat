@@ -1,6 +1,7 @@
 <?php namespace App;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Class RoomMessages
@@ -8,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
  */
 class RoomMessages extends Model
 {
+    use SoftDeletes;
+
     /**
      * @var array
      */
@@ -21,6 +24,22 @@ class RoomMessages extends Model
     protected $casts = [
         "data" => "array"
     ];
+
+    /**
+     * Save id the last message of chat
+     * On rooms table
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Save id the last message
+        static::created(function ($message) {
+            $message->room()->update([
+                "last_message_id" => $message->id
+            ]);
+        });
+    }
 
     /**
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo

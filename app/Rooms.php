@@ -16,9 +16,8 @@ class Rooms extends Model
      * @var array
      */
     protected $fillable = [
-        "uid",
-        "type",
-        "data"
+        "uid", "type", "data",
+        "last_message_id"
     ];
 
     /**
@@ -43,21 +42,33 @@ class Rooms extends Model
 
         // Sync current user as room admin
         static::created(function ($room) {
-            $room->users()->save(auth()->user(), [
+            $room->participants()->save(auth()->user(), [
                 'is_admin' => RoomType::USER_ADMIN
             ]);
         });
     }
 
     /**
-     * Users chat
+     * Participants of chat
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
-    public function users()
+    public function participants()
     {
         return $this->belongsToMany(User::class, "room_users", "room_id")
             ->withPivot("is_admin")->withTimestamps();
+    }
+
+    /**
+     * Participant of chat
+     * One to One - Common chat
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function participantChat()
+    {
+        return $this->belongsTo(RoomUsers::class, "id", "room_id")
+            ->where("user_id", "!=", auth()->user()->id);
     }
 
     /**
@@ -68,7 +79,7 @@ class Rooms extends Model
     public function messages()
     {
         return $this->hasMany(RoomMessages::class, "room_id")
-            ->orderBy("created_at", "desc");
+            ->orderBy("created_at", "asc");
     }
 
     /**
@@ -76,11 +87,9 @@ class Rooms extends Model
      *
      * @return mixed
      */
-    public function getLastMessageAttribute()
+    public function lastMessage()
     {
-        $query = $this->hasOne(RoomMessages::class, "room_id")
+        return $this->hasOne(RoomMessages::class, "id", "last_message_id")
             ->orderBy("created_at", "desc");
-
-        return $query->limit(1)->first();
     }
 }

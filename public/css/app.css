@@ -10483,13 +10483,10 @@ a.text-dark:focus {
   }
 }
 
-.message-input {
-  height: 90px !important;
-}
-
 .chat-avatar {
   width: 36px;
   height: 36px;
+  border-radius: 50%;
   float: left;
   margin-right: 10px;
 }
@@ -10503,6 +10500,10 @@ a.text-dark:focus {
   border-bottom: 1px solid #e7eaec;
 }
 
+.chat-user span.label {
+  float: right;
+}
+
 .chat-user a {
   color: inherit;
   display: block;
@@ -10511,18 +10512,6 @@ a.text-dark:focus {
 
 .chat-view {
   z-index: 20012;
-}
-
-.chat-users,
-.chat-statistic {
-  margin-left: -30px;
-}
-
-@media (max-width: 992px) {
-  .chat-users,
-  .chat-statistic {
-    margin-left: 0;
-  }
 }
 
 .chat-view .ibox-content {
@@ -10602,6 +10591,7 @@ a.text-dark:focus {
 
 .chat-message-form .form-group {
   margin-bottom: 0;
+  padding: 20px;
 }
 
 .ibox {
@@ -10664,16 +10654,12 @@ a.text-dark:focus {
   padding: 10px 15px;
 }
 
-.message-input {
-  height: 90px !important;
-}
-
 .form-control,
 .single-line {
   background-color: #FFFFFF;
   background-image: none;
   border: 1px solid #e5e6e7;
-  border-radius: 1px;
+  border-radius: 3px;
   color: inherit;
   display: block;
   padding: 6px 12px;
@@ -10683,5 +10669,6 @@ a.text-dark:focus {
   transition: border-color 0.15s ease-in-out 0s, box-shadow 0.15s ease-in-out 0s, -webkit-box-shadow 0.15s ease-in-out 0s;
   width: 100%;
   font-size: 14px;
+  resize: none;
 }
 
