@@ -1,5 +1,5 @@
 {
-	"authHost": "https://chat-laravel.herokuapp.com/",
+	"authHost": "http://chat-laravel.herokuapp.com/",
 	"authEndpoint": "/broadcasting/auth",
 	"clients": [
 		{
