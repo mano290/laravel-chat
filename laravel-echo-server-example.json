@@ -1,0 +1,36 @@
+{
+	"authHost": "https://chat-laravel.herokuapp.com/",
+	"authEndpoint": "/broadcasting/auth",
+	"clients": [
+		{
+			"appId": "e2acb6fb96ee09bd",
+			"key": "c1161832d84a912220b931d4a246b848"
+		}
+	],
+	"database": "redis",
+	"databaseConfig": {
+		"redis": {
+			"port": "19309",
+			"host": "ec2-34-236-251-45.compute-1.amazonaws.com",
+			"password": "pfcb318edb503c8b6d2b9b90033491cbbb8d714c55996601af7ebe16733cffa5a"
+		},
+		"sqlite": {
+			"databasePath": "/database/laravel-echo-server.sqlite"
+		}
+	},
+	"devMode": true,
+	"host": null,
+	"port": "6001",
+	"protocol": "http",
+	"socketio": {},
+	"sslCertPath": "",
+	"sslKeyPath": "",
+	"sslCertChainPath": "",
+	"sslPassphrase": "",
+	"apiOriginAllow": {
+		"allowCors": false,
+		"allowOrigin": "",
+		"allowMethods": "",
+		"allowHeaders": ""
+	}
+}

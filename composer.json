@@ -52,6 +52,7 @@
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
+            "@php -r \"file_exists('laravel-echo-server.json') || copy('laravel-echo-server-example.json', 'laravel-echo-server.json');\"",
             "@php artisan package:discover",
             "@php artisan key:generate"
         ]
