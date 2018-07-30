@@ -2,6 +2,7 @@
 
 use App\Events\MessageSent;
 use App\Message;
+use App\Services\UserService;
 use Auth;
 use Illuminate\Http\Request;
 
@@ -12,11 +13,18 @@ use Illuminate\Http\Request;
 class ChatsController extends Controller
 {
     /**
-     * ChatsController constructor.
+     * @var UserService
      */
-    public function __construct()
+    private $userService;
+
+    /**
+     * ChatsController constructor.
+     * @param UserService $userService
+     */
+    public function __construct(UserService $userService)
     {
         $this->middleware('auth');
+        $this->userService = $userService;
     }
 
     /**
@@ -56,5 +64,14 @@ class ChatsController extends Controller
         broadcast(new MessageSent($user, $message))->toOthers();
 
         return ['status' => 'Message Sent!'];
+    }
+
+    public function createNewChat()
+    {
+        $to_user = request()->get('user');
+
+        $message = request()->get('message');
+
+        $this->userService->createNewChatUser($to_user, $message);
     }
 }
